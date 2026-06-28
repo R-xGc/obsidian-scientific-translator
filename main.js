@@ -270,28 +270,40 @@ class ScientificTranslator extends Plugin {
     // 从 PDF 视图取选中文字（兼容多种 API）
     getPdfSelection(pdfView) {
         try {
+            // 方法 0：通过 PDF.js 的 eventBus 监听 textlayerrendered 后注入的 selection 监听
+            // （在 attachPdfListeners 里设置，存储在 pdfView._stSelectionOverride）
+            if (pdfView && pdfView._stSelectionOverride) {
+                return pdfView._stSelectionOverride;
+            }
+
             // 方法 1：PDF.js viewer API
             if (pdfView && pdfView.pdfViewer) {
                 const viewer = pdfView.pdfViewer;
                 if (typeof viewer.getSelection === 'function') {
-                    const sel = viewer.getSelection();
-                    if (sel && sel.toString().trim().length > 0) return sel.toString();
+                    try {
+                        const sel = viewer.getSelection();
+                        if (sel && typeof sel.toString === 'function' && sel.toString().trim().length > 0) {
+                            return sel.toString();
+                        }
+                    } catch {}
                 }
                 if (typeof viewer.getSelectedText === 'function') {
-                    const sel = viewer.getSelectedText();
-                    if (sel && sel.trim().length > 0) return sel;
+                    try {
+                        const sel = viewer.getSelectedText();
+                        if (sel && sel.trim && sel.trim().length > 0) return sel;
+                    } catch {}
                 }
                 // 通过 _pdfViewer 私有属性
                 try {
                     if (viewer._pdfViewer && typeof viewer._pdfViewer.getSelection === 'function') {
                         const sel = viewer._pdfViewer.getSelection();
-                        if (sel && sel.toString && sel.toString().trim().length > 0) {
+                        if (sel && typeof sel.toString === 'function' && sel.toString().trim().length > 0) {
                             return sel.toString();
                         }
                     }
                 } catch {}
             }
-            // 方法 2：从 pdfView 内部 iframe 取 selection
+            // 方法 2：从 pdfView 内部 iframe 取 selection（可能因 sandbox 失败）
             if (pdfView) {
                 let iframe = null;
                 if (pdfView.iframe) {
@@ -304,30 +316,30 @@ class ScientificTranslator extends Plugin {
                 if (iframe && iframe.contentWindow) {
                     try {
                         const sel = iframe.contentWindow.getSelection();
-                        if (sel && sel.toString && sel.toString().trim().length > 0) {
+                        if (sel && typeof sel.toString === 'function' && sel.toString().trim().length > 0) {
                             return sel.toString();
                         }
+                        // 尝试读取 iframe body 的 textLayer 节点（PDF.js 用 div 模拟文本层）
+                        try {
+                            const textLayer = iframe.contentDocument?.querySelector('.textLayer');
+                            if (textLayer) {
+                                const sel2 = iframe.contentWindow.getSelection();
+                                if (sel2 && sel2.rangeCount > 0) {
+                                    return sel2.toString();
+                                }
+                            }
+                        } catch {}
                     } catch (crossOriginErr) {}
                 }
             }
             // 方法 3：active document 全局选择
             const sel = window.getSelection();
-            if (sel && sel.toString().trim().length > 0) return sel.toString();
+            if (sel && typeof sel.toString === 'function' && sel.toString().trim().length > 0) return sel.toString();
             // 方法 4：document.getSelection
             const docSel = document.getSelection();
-            if (docSel && docSel.toString && docSel.toString().trim().length > 0) {
+            if (docSel && typeof docSel.toString === 'function' && docSel.toString().trim().length > 0) {
                 return docSel.toString();
             }
-            // 方法 5：遍历 shadowRoot 找文本节点
-            try {
-                const root = document.querySelector('.pdf-viewer-container') ||
-                             document.querySelector('[data-type="pdf"]') ||
-                             document.querySelector('.workspace-leaf-content[data-type="pdf"]');
-                if (root) {
-                    const txt = (root.shadowRoot || root).textContent || '';
-                    // 这种方法取不到 selection 范围，仅做参考
-                }
-            } catch {}
         } catch (e) {
             // 静默
         }
@@ -346,21 +358,52 @@ class ScientificTranslator extends Plugin {
                 const sel = this.getPdfSelection(pdfView);
                 if (sel && sel.trim()) {
                     this.pdfSelectionCache = sel;
+                    pdfView._stSelectionOverride = sel;
                 }
             };
 
             // 监听多个事件
             container.addEventListener('mouseup', cacheSelection);
             container.addEventListener('keyup', cacheSelection);
-            container.addEventListener('selectionchange', () => {
-                setTimeout(cacheSelection, 50);
-            });
 
-            // 同时监听整个 document 的 selectionchange（fallback）
+            // 尝试通过 PDF.js eventBus 监听 textlayerrendered（最可靠）
+            try {
+                if (pdfView.pdfViewer) {
+                    const viewer = pdfView.pdfViewer;
+                    const eventBus = viewer.eventBus || viewer._eventBus;
+                    if (eventBus && typeof eventBus.on === 'function') {
+                        // 当文本层渲染完成后，记录 viewer 引用
+                        eventBus.on('textlayerrendered', () => {
+                            // textlayerrendered 触发后，pdfViewer 实例就已经更新
+                            // 下次调用 getPdfSelection() 时能用
+                            pdfView._stPdfViewerReady = true;
+                        });
+                        eventBus.on('pagesloaded', () => {
+                            pdfView._stPdfViewerReady = true;
+                        });
+                    }
+                }
+            } catch {}
+
+            // 监听整个 document 的 mouseup（最关键的 fallback）
+            const docMouseUpHandler = (e) => {
+                // 检查点击是否在 PDF 视图内
+                if (pdfView.contentEl && pdfView.contentEl.contains(e.target)) {
+                    setTimeout(cacheSelection, 50);
+                }
+                // 也检查 target 是不是 PDF 的 iframe
+                if (e.target && e.target.tagName === 'IFRAME' && e.target.src && e.target.src.includes('.pdf')) {
+                    setTimeout(cacheSelection, 50);
+                }
+            };
+            document.addEventListener('mouseup', docMouseUpHandler, true);
+
+            // 监听 selectionchange（document 级别）
             const docSelHandler = () => {
                 const sel = this.getPdfSelection(pdfView);
                 if (sel && sel.trim()) {
                     this.pdfSelectionCache = sel;
+                    pdfView._stSelectionOverride = sel;
                 }
             };
             document.addEventListener('selectionchange', docSelHandler);
@@ -369,6 +412,7 @@ class ScientificTranslator extends Plugin {
             pdfView._stCleanup = () => {
                 container.removeEventListener('mouseup', cacheSelection);
                 container.removeEventListener('keyup', cacheSelection);
+                document.removeEventListener('mouseup', docMouseUpHandler, true);
                 document.removeEventListener('selectionchange', docSelHandler);
             };
         } catch (e) {
