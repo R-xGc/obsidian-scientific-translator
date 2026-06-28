@@ -1,0 +1,21 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build output
+*.js.map
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Obsidian plugin dev
+data.json

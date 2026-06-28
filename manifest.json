@@ -1,0 +1,11 @@
+{
+  "id": "scientific-translator",
+  "name": "Scientific Translator",
+  "version": "1.0.0",
+  "minAppVersion": "1.4.0",
+  "description": "右键选中翻译，附带音标和科研术语备注，支持任意 OpenAI 兼容 API（OpenAI、MiniMax、DeepSeek、Ollama 等）。专为科研论文（深度学习/AI/CV/NLP）优化。",
+  "author": "Eitan",
+  "authorUrl": "",
+  "fundingUrl": "",
+  "isDesktopOnly": true
+}
