@@ -25,6 +25,7 @@ const DEFAULT_SETTINGS = {
     ttsLangOriginal: 'en-US',
     ttsLangTranslation: 'zh-CN',
     maxInputLength: 2000,
+    autoTranslateClipboard: true,            // 复制后自动翻译（PDF 阅读必备）
     prompt: `你是一名科研论文翻译助手，专门翻译深度学习、计算机视觉、人工智能、自然语言处理等领域的英文文本。
 
 翻译规则：
@@ -212,11 +213,63 @@ class ScientificTranslator extends Plugin {
                 await this.handleTranslate(text);
             },
         });
+
+        // 监听剪贴板变化（自动翻译 PDF 等场景）
+        this.startClipboardWatcher();
+    }
+
+    // 监听剪贴板变化，自动翻译剪贴板内容
+    startClipboardWatcher() {
+        let lastClipboardText = '';
+        let lastTranslateTime = 0;
+
+        // 监听 Ctrl+C / 复制事件
+        const onCopy = () => {
+            setTimeout(async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    const now = Date.now();
+
+                    // 防止重复触发：剪贴板没变 / 1.5 秒内已翻译过 / 文本太短
+                    if (!text || text === lastClipboardText) return;
+                    if (now - lastTranslateTime < 1500) return;
+                    if (text.trim().length < 2) return;
+                    if (text.trim().length > 2000) return;  // 太长不自动弹
+
+                    lastClipboardText = text;
+                    lastTranslateTime = now;
+
+                    // 仅在自动模式开启时弹窗（默认开启）
+                    if (this.settings.autoTranslateClipboard !== false) {
+                        await this.handleTranslate(text);
+                    }
+                } catch (e) {
+                    // clipboard read 失败（权限/隐私设置）
+                }
+            }, 100);  // 等复制完成
+        };
+
+        // 监听 Ctrl+C（在 document 上 capture 阶段）
+        document.addEventListener('copy', onCopy, true);
+
+        // 也监听剪切（ctrl+x），不常见但兼容
+        document.addEventListener('cut', onCopy, true);
+
+        this._clipboardCleanup = () => {
+            document.removeEventListener('copy', onCopy, true);
+            document.removeEventListener('cut', onCopy, true);
+        };
     }
 
     onunload() {
         // 关闭所有弹窗
         document.querySelectorAll('.scientific-translator-popup').forEach((el) => el.remove());
+        // 清理剪贴板监听
+        if (this._clipboardCleanup) this._clipboardCleanup();
+        // 清理 PDF 监听
+        this.app.workspace.getLeavesOfType('pdf').forEach((leaf) => {
+            if (leaf.view && leaf.view._stCleanup) leaf.view._stCleanup();
+        });
     }
 
     async loadSettings() {
@@ -873,6 +926,18 @@ class TranslatorSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.ttsEnabled)
                     .onChange(async (value) => {
                         this.plugin.settings.ttsEnabled = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName('复制后自动翻译')
+            .setDesc('复制 PDF/任意文本后自动弹出翻译（推荐阅读论文时开启）。太长的文本不会自动触发。')
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.plugin.settings.autoTranslateClipboard !== false)
+                    .onChange(async (value) => {
+                        this.plugin.settings.autoTranslateClipboard = value;
                         await this.plugin.saveSettings();
                     })
             );
