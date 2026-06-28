@@ -397,6 +397,33 @@ class TranslatorSettingTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
+    updateStatusBox(box) {
+        const s = this.plugin.settings;
+        const isPlaceholder = (v) => !v || v.startsWith('<YOUR_');
+        const isConfigured =
+            !isPlaceholder(s.apiUrl) &&
+            !isPlaceholder(s.apiKey) &&
+            !isPlaceholder(s.model);
+
+        if (isConfigured) {
+            box.style.background = 'rgba(0, 200, 100, 0.15)';
+            box.style.color = 'var(--text-success, #4caf50)';
+            box.style.border = '1px solid rgba(0, 200, 100, 0.4)';
+            box.innerHTML = '✅ <strong>已就绪</strong> — API 已配置好，可以开始翻译。<br>' +
+                `<small>API: ${s.apiUrl} · 模型: ${s.model}</small>`;
+        } else {
+            box.style.background = 'rgba(255, 100, 100, 0.12)';
+            box.style.color = 'var(--text-error, #ff6b6b)';
+            box.style.border = '1px solid rgba(255, 100, 100, 0.4)';
+            const missing = [];
+            if (isPlaceholder(s.apiUrl)) missing.push('API URL');
+            if (isPlaceholder(s.apiKey)) missing.push('API Key');
+            if (isPlaceholder(s.model)) missing.push('模型');
+            box.innerHTML = '⚠️ <strong>还需要配置</strong>：' + missing.join('、') + '<br>' +
+                '<small>填入 3 个字段后会自动变绿。</small>';
+        }
+    }
+
     display() {
         const { containerEl } = this;
         containerEl.empty();
@@ -406,16 +433,15 @@ class TranslatorSettingTab extends PluginSettingTab {
         // API 配置分组
         containerEl.createEl('h3', { text: 'API 配置（必须填入你自己的 API）' });
 
-        // 重要提示
-        const warning = containerEl.createEl('div');
-        warning.style.padding = '10px';
-        warning.style.marginBottom = '16px';
-        warning.style.background = 'var(--background-modifier-error)';
-        warning.style.borderRadius = '4px';
-        warning.style.color = 'var(--text-error)';
-        warning.style.fontSize = '13px';
-        warning.style.lineHeight = '1.5';
-        warning.innerHTML = '⚠️ <strong>必须接入你自己的 API</strong>。<br>本插件不内置任何公共服务，请到你的 API 提供商获取密钥后填入下方。';
+        // 状态指示框（根据配置状态自动变色）
+        const statusBox = containerEl.createEl('div');
+        statusBox.id = 'st-status-box';
+        statusBox.style.padding = '10px';
+        statusBox.style.marginBottom = '16px';
+        statusBox.style.borderRadius = '4px';
+        statusBox.style.fontSize = '13px';
+        statusBox.style.lineHeight = '1.5';
+        this.updateStatusBox(statusBox);
 
         new Setting(containerEl)
             .setName('API URL')
@@ -427,6 +453,7 @@ class TranslatorSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.apiUrl = value;
                         await this.plugin.saveSettings();
+                        this.updateStatusBox(statusBox);
                     })
             );
 
@@ -440,6 +467,7 @@ class TranslatorSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.apiKey = value;
                         await this.plugin.saveSettings();
+                        this.updateStatusBox(statusBox);
                     });
             });
 
@@ -453,6 +481,7 @@ class TranslatorSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.model = value;
                         await this.plugin.saveSettings();
+                        this.updateStatusBox(statusBox);
                     })
             );
 
