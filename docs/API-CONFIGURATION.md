@@ -18,7 +18,7 @@ Obsidian → Settings → Scientific Translator
 | API Key | ✅ | 你的密钥 |
 | 模型 | ✅ | 模型名称 |
 
-⚠️ 默认值是占位符（`<YOUR_API_KEY>` 等），**必须替换**才能用。
+⚠️ 默认值是占位符（`<API_KEY>` 等），**必须替换**才能用。
 
 ---
 

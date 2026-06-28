@@ -15,9 +15,9 @@ const { Plugin, PluginSettingTab, Setting, Menu, Notice } = require('obsidian');
 // =====================
 
 const DEFAULT_SETTINGS = {
-    apiUrl: '<YOUR_API_BASE_URL>',          // 例如: https://api.openai.com/v1
-    apiKey: '<YOUR_API_KEY>',                // 你的 API 密钥（必填）
-    model: '<YOUR_MODEL_NAME>',              // 例如: gpt-4o-mini / MiniMax-M3 / deepseek-chat
+    apiUrl: '<API_BASE_URL>',                // 例如: https://api.openai.com/v1
+    apiKey: '<API_KEY>',                      // 你的 API 密钥（必填）
+    model: '<MODEL_NAME>',                    // 例如: gpt-4o-mini / MiniMax-M3 / deepseek-chat
     temperature: 0.3,
     showPhonetic: true,
     showTerms: true,
@@ -136,9 +136,9 @@ class ScientificTranslator extends Plugin {
 
     async handleTranslate(text) {
         if (!this.settings.apiKey ||
-            this.settings.apiKey === '<YOUR_API_KEY>' ||
-            this.settings.apiUrl === '<YOUR_API_BASE_URL>' ||
-            this.settings.model === '<YOUR_MODEL_NAME>') {
+            this.settings.apiKey === '<API_KEY>' ||
+            this.settings.apiUrl === '<API_BASE_URL>' ||
+            this.settings.model === '<MODEL_NAME>') {
             new Notice('⚠️ 请先在设置中配置 API（占位符必须替换）');
             return;
         }
@@ -399,7 +399,7 @@ class TranslatorSettingTab extends PluginSettingTab {
 
     updateStatusBox(box) {
         const s = this.plugin.settings;
-        const isPlaceholder = (v) => !v || v.startsWith('<YOUR_');
+        const isPlaceholder = (v) => !v || v.startsWith('<') && v.endsWith('>');
         const isConfigured =
             !isPlaceholder(s.apiUrl) &&
             !isPlaceholder(s.apiKey) &&
@@ -431,7 +431,7 @@ class TranslatorSettingTab extends PluginSettingTab {
         containerEl.createEl('h2', { text: '🔬 Scientific Translator 设置' });
 
         // API 配置分组
-        containerEl.createEl('h3', { text: 'API 配置（必须填入你自己的 API）' });
+        containerEl.createEl('h3', { text: 'API 配置' });
 
         // 状态指示框（根据配置状态自动变色）
         const statusBox = containerEl.createEl('div');
@@ -462,7 +462,7 @@ class TranslatorSettingTab extends PluginSettingTab {
             .setDesc('你的 API 密钥。点击右侧眼睛图标可显示明文。')
             .addText((text) => {
                 text.inputEl.type = 'password';
-                text.setPlaceholder('<YOUR_API_KEY>')
+                text.setPlaceholder('<API_KEY>')
                     .setValue(this.plugin.settings.apiKey)
                     .onChange(async (value) => {
                         this.plugin.settings.apiKey = value;

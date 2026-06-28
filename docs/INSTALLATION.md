@@ -63,9 +63,9 @@ C:\Users\YourName\Documents\MyVault\.obsidian\plugins\scientific-translator\
 ⚠️ **必须填入你自己的 API**——参考 [API-CONFIGURATION.md](API-CONFIGURATION.md) 了解各厂商的配置方式。
 
 默认设置里都是占位符：
-- `<YOUR_API_BASE_URL>`
-- `<YOUR_API_KEY>`
-- `<YOUR_MODEL_NAME>`
+- `<API_BASE_URL>`
+- `<API_KEY>`
+- `<MODEL_NAME>`
 
 填好后才能用。
 
@@ -112,5 +112,5 @@ npm run build
 - 重启 Obsidian
 
 如果点了菜单但弹窗报错：
-- 检查 API Key 是否配置（不能是 `<YOUR_API_KEY>`）
+- 检查 API Key 是否配置（不能是 `<API_KEY>`）
 - 参考 [TROUBLESHOOTING.md](TROUBLESHOOTING.md)

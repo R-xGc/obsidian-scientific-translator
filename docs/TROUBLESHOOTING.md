@@ -34,13 +34,13 @@
 
 ### 弹窗提示「请先在设置中配置 API（占位符必须替换）」
 
-**原因**：默认设置里都是占位符（`<YOUR_API_KEY>` 等），必须填入真实值。
+**原因**：默认设置里都是占位符（`<API_KEY>` 等），必须填入真实值。
 
 **解决**：
 1. Settings → Scientific Translator
-2. 把 `<YOUR_API_BASE_URL>` 改成实际 API 地址（如 `https://api.openai.com/v1`）
-3. 把 `<YOUR_API_KEY>` 改成你的真实密钥
-4. 把 `<YOUR_MODEL_NAME>` 改成实际模型名（如 `gpt-4o-mini`）
+2. 把 `<API_BASE_URL>` 改成实际 API 地址（如 `https://api.openai.com/v1`）
+3. 把 `<API_KEY>` 改成你的真实密钥
+4. 把 `<MODEL_NAME>` 改成实际模型名（如 `gpt-4o-mini`）
 5. 关闭再打开一次设置确保保存
 
 ---
