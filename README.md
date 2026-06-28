@@ -16,7 +16,7 @@
 | 🔤 **IPA 音标** | 自动附带国际音标，方便学习术语发音 |
 | 📚 **术语备注** | 模型识别专业术语时附带简短解释（针对深度学习术语） |
 | 🔊 **朗读原文 / 译文** | 用浏览器 TTS 朗读，按钮一键发音 |
-| 🔌 **必须接入自己的 API** | 支持任意 OpenAI 兼容 API（OpenAI、MiniMax、DeepSeek、Ollama、Azure 等） |
+| 🔌 **接入自己的 API** | 支持任意 OpenAI 兼容 API（OpenAI、MiniMax、DeepSeek、Ollama、Azure 等） |
 | 🎯 **科研深度优化** | 内置科研翻译 system prompt，术语精确、语体客观 |
 | 🎨 **主题适配** | 完全跟随 Obsidian 主题（亮 / 暗 / 自定义） |
 
