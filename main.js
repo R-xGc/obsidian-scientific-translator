@@ -92,20 +92,42 @@ class ScientificTranslator extends Plugin {
         // 注册右键菜单（PDF 阅读视图，Obsidian 1.5+）
         this.registerEvent(
             this.app.workspace.on('pdf-menu', (menu, pdfView) => {
-                let selection = this.pdfSelectionCache;
-                if (!selection || !selection.trim()) {
-                    selection = this.getPdfSelection(pdfView);
-                }
-                if (selection && selection.trim().length > 0) {
-                    menu.addItem((item) =>
-                        item
-                            .setTitle('🔬 科研翻译')
-                            .setIcon('languages')
-                            .onClick(async () => {
+                // 多种方式取选中文字
+                let selection = this.getPdfSelectionDeep(pdfView);
+
+                // 如果取不到，但 PDF.js 的 clipboard fallback 可用
+                // 让用户在弹出菜单后可以选择「从剪贴板翻译」
+                menu.addItem((item) =>
+                    item
+                        .setTitle('🔬 科研翻译（选中文字）')
+                        .setIcon('languages')
+                        .onClick(async () => {
+                            if (selection && selection.trim()) {
                                 await this.handleTranslate(selection);
-                            })
-                    );
-                }
+                            } else {
+                                new Notice('⚠️ 没检测到选区，请确认是否选中了 PDF 文字');
+                            }
+                        })
+                );
+
+                // Fallback：从剪贴板翻译（用户先在 PDF 里 Ctrl+C 复制）
+                menu.addItem((item) =>
+                    item
+                        .setTitle('📋 从剪贴板翻译（PDF）')
+                        .setIcon('clipboard')
+                        .onClick(async () => {
+                            try {
+                                const text = await navigator.clipboard.readText();
+                                if (text && text.trim()) {
+                                    await this.handleTranslate(text);
+                                } else {
+                                    new Notice('⚠️ 剪贴板为空，先在 PDF 里 Ctrl+C 复制文字');
+                                }
+                            } catch (e) {
+                                new Notice('⚠️ 读取剪贴板失败：' + e.message);
+                            }
+                        })
+                );
             })
         );
 
@@ -230,12 +252,26 @@ class ScientificTranslator extends Plugin {
         }
     }
 
+    // 从 PDF 视图取选中文字（深度兼容）
+    getPdfSelectionDeep(pdfView) {
+        // 1. 先用 cache（mouseup 时缓存的）
+        if (this.pdfSelectionCache && this.pdfSelectionCache.trim()) {
+            return this.pdfSelectionCache;
+        }
+
+        // 2. 调用旧的兼容方法
+        const sel = this.getPdfSelection(pdfView);
+        if (sel && sel.trim()) return sel;
+
+        // 3. 最后返回空（让菜单显示 + 让用户从剪贴板翻译）
+        return '';
+    }
+
     // 从 PDF 视图取选中文字（兼容多种 API）
     getPdfSelection(pdfView) {
         try {
             // 方法 1：PDF.js viewer API
             if (pdfView && pdfView.pdfViewer) {
-                // 尝试多个 PDF.js viewer 方法名
                 const viewer = pdfView.pdfViewer;
                 if (typeof viewer.getSelection === 'function') {
                     const sel = viewer.getSelection();
@@ -245,11 +281,13 @@ class ScientificTranslator extends Plugin {
                     const sel = viewer.getSelectedText();
                     if (sel && sel.trim().length > 0) return sel;
                 }
-                // 通过事件总线取
+                // 通过 _pdfViewer 私有属性
                 try {
-                    const eventBus = viewer.eventBus;
-                    if (eventBus) {
-                        // 标记，但我们无法直接同步取，先尝试其他方法
+                    if (viewer._pdfViewer && typeof viewer._pdfViewer.getSelection === 'function') {
+                        const sel = viewer._pdfViewer.getSelection();
+                        if (sel && sel.toString && sel.toString().trim().length > 0) {
+                            return sel.toString();
+                        }
                     }
                 } catch {}
             }
@@ -269,21 +307,29 @@ class ScientificTranslator extends Plugin {
                         if (sel && sel.toString && sel.toString().trim().length > 0) {
                             return sel.toString();
                         }
-                    } catch (crossOriginErr) {
-                        // iframe 跨域或 sandbox 限制
-                    }
+                    } catch (crossOriginErr) {}
                 }
             }
             // 方法 3：active document 全局选择
             const sel = window.getSelection();
             if (sel && sel.toString().trim().length > 0) return sel.toString();
-            // 方法 4：document.getSelection（embed PDF）
+            // 方法 4：document.getSelection
             const docSel = document.getSelection();
             if (docSel && docSel.toString && docSel.toString().trim().length > 0) {
                 return docSel.toString();
             }
+            // 方法 5：遍历 shadowRoot 找文本节点
+            try {
+                const root = document.querySelector('.pdf-viewer-container') ||
+                             document.querySelector('[data-type="pdf"]') ||
+                             document.querySelector('.workspace-leaf-content[data-type="pdf"]');
+                if (root) {
+                    const txt = (root.shadowRoot || root).textContent || '';
+                    // 这种方法取不到 selection 范围，仅做参考
+                }
+            } catch {}
         } catch (e) {
-            // 静默失败
+            // 静默
         }
         return '';
     }
@@ -295,20 +341,35 @@ class ScientificTranslator extends Plugin {
             const container = pdfView.contentEl || pdfView.containerEl;
             if (!container) return;
 
-            const onMouseUp = () => {
+            // 多种事件都缓存（兼容不同 PDF.js 版本）
+            const cacheSelection = () => {
                 const sel = this.getPdfSelection(pdfView);
                 if (sel && sel.trim()) {
                     this.pdfSelectionCache = sel;
                 }
             };
 
-            container.addEventListener('mouseup', onMouseUp);
-            container.addEventListener('keyup', onMouseUp);
+            // 监听多个事件
+            container.addEventListener('mouseup', cacheSelection);
+            container.addEventListener('keyup', cacheSelection);
+            container.addEventListener('selectionchange', () => {
+                setTimeout(cacheSelection, 50);
+            });
+
+            // 同时监听整个 document 的 selectionchange（fallback）
+            const docSelHandler = () => {
+                const sel = this.getPdfSelection(pdfView);
+                if (sel && sel.trim()) {
+                    this.pdfSelectionCache = sel;
+                }
+            };
+            document.addEventListener('selectionchange', docSelHandler);
 
             pdfView._stAttached = true;
             pdfView._stCleanup = () => {
-                container.removeEventListener('mouseup', onMouseUp);
-                container.removeEventListener('keyup', onMouseUp);
+                container.removeEventListener('mouseup', cacheSelection);
+                container.removeEventListener('keyup', cacheSelection);
+                document.removeEventListener('selectionchange', docSelHandler);
             };
         } catch (e) {
             // 静默
@@ -410,9 +471,12 @@ class TranslatorPopup {
 
         const rect = document.body.getBoundingClientRect();
         this.popupEl.style.top = `${rect.height / 2 - 200}px`;
-        this.popupEl.style.left = `${rect.width / 2 - 280}px`;
+        this.popupEl.style.left = `${rect.width / 2 - 230}px`;
 
         document.body.appendChild(this.popupEl);
+
+        // 让弹窗可拖动（按住标题栏拖）
+        this.enableDrag();
 
         this.popupEl.querySelector('.st-original-text').textContent = this.text;
 
@@ -531,6 +595,66 @@ class TranslatorPopup {
         window.speechSynthesis.speak(utter);
     }
 
+    // 启用弹窗拖动（鼠标按住 header 即可拖）
+    enableDrag() {
+        if (!this.popupEl) return;
+        const header = this.popupEl.querySelector('.st-header');
+        if (!header) return;
+        // 提示用户可拖动
+        header.style.cursor = 'move';
+        header.title = '按住拖动';
+
+        let dragging = false;
+        let startX = 0;
+        let startY = 0;
+        let origLeft = 0;
+        let origTop = 0;
+
+        const onMouseDown = (e) => {
+            // 忽略关闭按钮
+            if (e.target.classList.contains('st-close')) return;
+            dragging = true;
+            const rect = this.popupEl.getBoundingClientRect();
+            startX = e.clientX;
+            startY = e.clientY;
+            origLeft = rect.left;
+            origTop = rect.top;
+            // 用 transform 加快，避免 layout thrashing
+            this.popupEl.style.transition = 'none';
+            e.preventDefault();
+        };
+
+        const onMouseMove = (e) => {
+            if (!dragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            const newLeft = origLeft + dx;
+            const newTop = origTop + dy;
+            this.popupEl.style.left = `${newLeft}px`;
+            this.popupEl.style.top = `${newTop}px`;
+            // 清除默认的 center 定位（避免冲突）
+            this.popupEl.style.right = 'auto';
+        };
+
+        const onMouseUp = () => {
+            if (dragging) {
+                dragging = false;
+                this.popupEl.style.transition = '';
+            }
+        };
+
+        header.addEventListener('mousedown', onMouseDown);
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+
+        // 清理函数
+        this.dragCleanup = () => {
+            header.removeEventListener('mousedown', onMouseDown);
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+    }
+
     close() {
         if (this.popupEl) {
             this.popupEl.remove();
@@ -541,6 +665,10 @@ class TranslatorPopup {
         }
         if (this.outsideClickHandler) {
             document.removeEventListener('mousedown', this.outsideClickHandler);
+        }
+        if (this.dragCleanup) {
+            this.dragCleanup();
+            this.dragCleanup = null;
         }
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
