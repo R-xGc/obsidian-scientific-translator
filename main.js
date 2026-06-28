@@ -86,6 +86,45 @@ class ScientificTranslator extends Plugin {
             })
         );
 
+        // 注册右键菜单（PDF 阅读视图，Obsidian 1.5+）
+        this.registerEvent(
+            this.app.workspace.on('pdf-menu', (menu, pdfView) => {
+                const selection = this.getPdfSelection(pdfView);
+                if (selection && selection.trim().length > 0) {
+                    menu.addItem((item) =>
+                        item
+                            .setTitle('🔬 科研翻译')
+                            .setIcon('languages')
+                            .onClick(async () => {
+                                await this.handleTranslate(selection);
+                            })
+                    );
+                }
+            })
+        );
+
+        // 命令面板：从 PDF 选区翻译（fallback）
+        this.addCommand({
+            id: 'translate-pdf-selection',
+            name: 'Scientific Translator: Translate PDF selection',
+            callback: async () => {
+                const pdfView = this.app.workspace.getActiveViewOfType(
+                    // eslint-disable-next-line no-undef
+                    require('obsidian').PdfView
+                );
+                if (!pdfView) {
+                    new Notice('⚠️ 请先打开一个 PDF 文件');
+                    return;
+                }
+                const selection = this.getPdfSelection(pdfView);
+                if (!selection || selection.trim().length === 0) {
+                    new Notice('⚠️ 请先在 PDF 里选中要翻译的文字');
+                    return;
+                }
+                await this.handleTranslate(selection);
+            },
+        });
+
         // 命令面板
         this.addCommand({
             id: 'translate-selection',
@@ -157,6 +196,34 @@ class ScientificTranslator extends Plugin {
         } catch (e) {
             popup.setError(e.message || String(e));
         }
+    }
+
+    // 从 PDF 视图取选中文字（兼容多种 API）
+    getPdfSelection(pdfView) {
+        try {
+            // 方法 1：PDF.js viewer API
+            if (pdfView && pdfView.pdfViewer && typeof pdfView.pdfViewer.getSelection === 'function') {
+                const sel = pdfView.pdfViewer.getSelection();
+                if (sel && sel.toString().trim().length > 0) return sel.toString();
+            }
+            // 方法 2：iframe contentWindow
+            if (pdfView && pdfView.iframe && pdfView.iframe.contentWindow) {
+                const sel = pdfView.iframe.contentWindow.getSelection();
+                if (sel && sel.toString().trim().length > 0) return sel.toString();
+            }
+            // 方法 3：window.getSelection（canvas-based 选择不一定生效）
+            const sel = window.getSelection();
+            if (sel && sel.toString().trim().length > 0) return sel.toString();
+            // 方法 4：active document
+            if (document.activeElement && document.activeElement.tagName === 'EMBED') {
+                // PDF embedded as <embed>, try parent's selection
+                const docSel = document.getSelection();
+                if (docSel && docSel.toString().trim().length > 0) return docSel.toString();
+            }
+        } catch (e) {
+            // silently fail
+        }
+        return '';
     }
 
     async callAPI(text) {
