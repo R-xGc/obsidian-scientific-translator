@@ -18,6 +18,28 @@
 3. 重启 Obsidian（完全退出再打开）
 4. 查看 Console 报错：View → Toggle Developer Tools → Console
 
+> 💡 如果只是 PDF 视图里右键没菜单，**这是 Obsidian 限制**——用「复制即翻译」（Ctrl+C）即可绕开。
+
+---
+
+### 复制后弹窗不自动出现
+
+**症状**：在 PDF 里选中 + `Ctrl+C`，但翻译弹窗没出现
+
+**排查步骤**：
+1. 检查设置：Settings → Scientific Translator → 「复制后自动翻译」开关是否开启
+2. 如果你在 Obsidian **外部**（如浏览器 PDF）复制，复制事件不会传到 Obsidian
+   - 解决：在 Obsidian 内任意位置右键 → 「Paste」或先复制再点回 Obsidian
+3. 如果你**从其他应用复制**到 Obsidian，剪贴板事件可能没触发
+   - 解决：用命令面板 `Ctrl/Cmd + P` → `clipboard` → 手动翻译
+4. 复制内容太短（< 2 字符）或太长（> 2000 字符）不会自动触发
+5. 1.5 秒内重复复制同一内容不会重复触发（防误触）
+6. 查看 Console 报错：View → Toggle Developer Tools → Console
+     └── styles.css
+   ```
+3. 重启 Obsidian（完全退出再打开）
+4. 查看 Console 报错：View → Toggle Developer Tools → Console
+
 ---
 
 ### 报错 "Cannot find module 'obsidian'"

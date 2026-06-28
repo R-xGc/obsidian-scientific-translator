@@ -88,20 +88,20 @@
 
 ---
 
-## 场景 4：从剪贴板翻译（不打开笔记时）
+## 场景 4：复制即翻译（推荐 ⭐）
 
 ### 场景
-你在浏览器里看 PDF（不是 Obsidian 里），想翻译一段。
+你在 Obsidian 里打开 PDF 读论文，**最快**的翻译方式。
 
 ### 步骤
 
-1. 在 PDF 里选中文字 → `Ctrl/C`
+1. 在 PDF 里选中一段英文（比如 "residual learning"）
+2. 按 `Ctrl+C` 复制
+3. **弹窗自动出现**——显示译文 + 音标 + 术语备注
 
-2. 回到 Obsidian
+不用右键，不用命令面板，不用切窗口——**复制即翻译**。
 
-3. `Ctrl/Cmd + P` → 输入「Translate clipboard」
-
-4. 弹窗显示翻译
+> 这个功能默认开启。如要关闭：Settings → Scientific Translator → 「复制后自动翻译」。
 
 ---
 

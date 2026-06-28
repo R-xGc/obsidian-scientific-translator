@@ -101,15 +101,30 @@ npm run build
 
 ## 验证安装
 
-1. Obsidian 里打开一个笔记
-2. 选中一段英文（任意）
-3. 右键 → 应该看到 **🔬 科研翻译** 菜单项
-4. 点击后弹窗出现「⏳ 翻译中…」
+### 方式 A：复制即翻译（推荐，PDF 也支持）
 
-如果没看到菜单项：
+1. Obsidian 里打开一个笔记（或 PDF）
+2. 选中一段英文（任意）
+3. 按 `Ctrl+C` 复制
+4. **弹窗应自动出现**「⏳ 翻译中…」→ 显示译文 + 音标 + 术语
+
+### 方式 B：右键翻译
+
+1. 在 markdown 笔记里选中一段英文
+2. 右键 → 应该看到 **🔬 科研翻译** 菜单项
+3. 点击后弹窗出现
+
+### 方式 C：命令面板
+
+1. `Ctrl/Cmd + P` → 输入 `clipboard`
+2. 选 **Scientific Translator: Translate clipboard**
+3. 弹窗出现
+
+如果没看到任何反应：
 - 检查 Community plugins 列表里 Scientific Translator 是否已启用
 - 确认 `manifest.json` 在正确位置
 - 重启 Obsidian
+- 检查设置里「复制后自动翻译」开关是否开启
 
 如果点了菜单但弹窗报错：
 - 检查 API Key 是否配置（不能是 `<API_KEY>`）

@@ -1,7 +1,8 @@
 # Scientific Translator for Obsidian
 
 > 🔬 专为**科研论文**阅读设计的 Obsidian 翻译插件。
-> 选中术语 → 右键 → 弹窗显示「**译文 + IPA 音标 + 术语备注 + 读音**」，针对深度学习 / AI / CV / NLP 领域深度优化。
+> **复制即翻译**——选中文字 → `Ctrl+C` → 自动弹窗显示「**译文 + IPA 音标 + 术语备注 + 读音**」。
+> 针对深度学习 / AI / CV / NLP 领域深度优化。
 > **必须接入用户自己的 API**（OpenAI、MiniMax、DeepSeek、Ollama、Azure 等任意 OpenAI 兼容服务）。
 
 ![obsidian](https://img.shields.io/badge/Obsidian-1.4%2B-purple) ![platform](https://img.shields.io/badge/Platform-Desktop-blue) ![license](https://img.shields.io/badge/License-MIT-green)
@@ -12,13 +13,35 @@
 
 | 特性 | 说明 |
 |---|---|
-| 🖱️ **右键翻译** | 选中文字 → 右键 → 「🔬 科研翻译」，弹窗显示结果 |
+| 📋 **复制即翻译** | 选中文字 → `Ctrl+C` → 自动弹窗翻译（**PDF 友好**） |
+| 🖱️ **右键翻译** | markdown 编辑器右键 → 「🔬 科研翻译」 |
 | 🔤 **IPA 音标** | 自动附带国际音标，方便学习术语发音 |
 | 📚 **术语备注** | 模型识别专业术语时附带简短解释（针对深度学习术语） |
 | 🔊 **朗读原文 / 译文** | 用浏览器 TTS 朗读，按钮一键发音 |
+| 🖱️ **可拖动弹窗** | 按住标题栏拖动，点击外部关闭 |
+| 🎨 **玻璃磨砂 UI** | 现代化玻璃质感界面，圆角 + 渐变标题 |
 | 🔌 **接入自己的 API** | 支持任意 OpenAI 兼容 API（OpenAI、MiniMax、DeepSeek、Ollama、Azure 等） |
 | 🎯 **科研深度优化** | 内置科研翻译 system prompt，术语精确、语体客观 |
-| 🎨 **主题适配** | 完全跟随 Obsidian 主题（亮 / 暗 / 自定义） |
+
+---
+
+## 🚀 使用方法（两种）
+
+### 方式 1：复制即翻译（推荐，**支持 PDF**）
+
+```
+1. 在任意地方（编辑器 / PDF）选中文字
+2. Ctrl+C 复制
+3. 翻译弹窗自动出现 ✅
+```
+
+### 方式 2：右键翻译（仅 markdown 编辑器）
+
+```
+1. 在 markdown 编辑器里选中文字
+2. 右键 → 「🔬 科研翻译」
+3. 弹窗出现
+```
 
 ---
 
@@ -82,15 +105,21 @@ cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/scientific-
 
 `Ctrl/Cmd + P` → 输入「Translate」 → 回车
 
-### 方式 4：从剪贴板翻译
+### 方式 4：从剪贴板翻译（手动）
 
-命令面板 → 「Translate clipboard」
+命令面板 → `Ctrl/Cmd + P` → 输入「clipboard」 → 「Scientific Translator: Translate clipboard」
 
 ---
 
 ## 📸 效果示例
 
-选中：`deep residual learning for image recognition`
+**复制即翻译**：
+
+```
+1. 在 PDF 里选中 "deep residual learning"
+2. Ctrl+C
+3. 弹窗自动出现：
+```
 
 弹窗：
 
@@ -155,6 +184,12 @@ obsidian-scientific-translator/
 ---
 
 ## 🛠 常见问题
+
+**Q：PDF 里选中后弹窗没自动出现？**
+A：检查 Settings → Scientific Translator → 「复制后自动翻译」开关是否开启。如果在 PDF 外部文档（浏览器）里复制，复制动作不会传到 Obsidian，需要在 Obsidian 窗口里复制。
+
+**Q：怎么关掉自动翻译？**
+A：Settings → Scientific Translator → 「复制后自动翻译」开关。
 
 **Q：弹窗里没显示音标？**
 A：模型不一定每次都返回音标。检查设置里「显示音标」是否开启，或在 Prompt 里强调必须输出音标。
