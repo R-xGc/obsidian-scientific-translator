@@ -19,3 +19,17 @@ Thumbs.db
 
 # Obsidian plugin dev
 data.json
+
+# Sensitive files - 永远不要提交到 Git
+.env
+.env.*
+*.env
+secrets.json
+config.local.json
+*.local.json
+api-keys.txt
+*.key
+*.pem
+
+# 任何看起来像 API key 的文件（粗略规则）
+# 用户自己填的 key 文件建议放在 vault 内，不要进这个仓库

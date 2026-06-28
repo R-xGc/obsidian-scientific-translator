@@ -1,31 +1,42 @@
-/* Scientific Translator 弹窗样式 */
+/* Scientific Translator 弹窗样式 - 玻璃磨砂质感 */
 
 .scientific-translator-popup {
     position: fixed;
-    width: 560px;
+    width: 460px;
     max-width: 90vw;
-    max-height: 80vh;
-    background: var(--background-primary);
+    max-height: 75vh;
+    background: rgba(30, 30, 40, 0.65);
     color: var(--text-normal);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 8px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 18px;
+    box-shadow:
+        0 12px 48px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
     z-index: 9999;
     display: flex;
     flex-direction: column;
-    font-size: 14px;
+    font-size: 13.5px;
     overflow: hidden;
-    animation: st-fade-in 0.15s ease-out;
+    animation: st-fade-in 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+/* 亮色主题适配 */
+.theme-light .scientific-translator-popup {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 @keyframes st-fade-in {
     from {
         opacity: 0;
-        transform: translateY(-8px);
+        transform: translateY(-12px) scale(0.97);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 
@@ -33,76 +44,101 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 14px;
-    background: var(--background-secondary);
-    border-bottom: 1px solid var(--background-modifier-border);
+    padding: 11px 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.02em;
 }
 
 .scientific-translator-popup .st-title {
-    font-size: 14px;
+    font-size: 13px;
+    background: linear-gradient(135deg, #4fc3f7 0%, #b39ddb 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 .scientific-translator-popup .st-close {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.06);
     border: none;
-    font-size: 20px;
+    font-size: 18px;
     line-height: 1;
     cursor: pointer;
     color: var(--text-muted);
-    padding: 0 4px;
-    border-radius: 4px;
+    padding: 0 8px;
+    border-radius: 8px;
+    height: 22px;
+    transition: background 0.15s;
 }
 
 .scientific-translator-popup .st-close:hover {
-    background: var(--background-modifier-hover);
-    color: var(--text-normal);
+    background: rgba(255, 100, 100, 0.3);
+    color: #fff;
 }
 
 .scientific-translator-popup .st-body {
-    padding: 14px;
+    padding: 14px 16px;
     overflow-y: auto;
     flex: 1;
+    line-height: 1.55;
+}
+
+.scientific-translator-popup .st-body::-webkit-scrollbar {
+    width: 6px;
+}
+.scientific-translator-popup .st-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
 }
 
 .scientific-translator-popup .st-original {
-    margin-bottom: 14px;
-    padding-bottom: 14px;
-    border-bottom: 1px dashed var(--background-modifier-border);
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
 .scientific-translator-popup .st-original-text {
     color: var(--text-muted);
     font-style: italic;
-    line-height: 1.6;
+    line-height: 1.55;
     white-space: pre-wrap;
     word-break: break-word;
+    font-size: 12.5px;
 }
 
 .scientific-translator-popup .st-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--text-muted);
     margin-bottom: 6px;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    opacity: 0.85;
 }
 
 .scientific-translator-popup .st-section {
-    margin-bottom: 14px;
+    margin-bottom: 13px;
 }
 
 .scientific-translator-popup .st-translation-text {
-    line-height: 1.7;
+    line-height: 1.65;
     white-space: pre-wrap;
     word-break: break-word;
+    font-size: 14px;
 }
 
 .scientific-translator-popup .st-phonetic {
-    font-family: 'Doulos SIL', 'Charis SIL', serif;
-    color: var(--text-accent);
-    font-size: 15px;
-    line-height: 1.6;
+    font-family: 'Doulos SIL', 'Charis SIL', 'Lucida Sans Unicode', serif;
+    color: #ffd54f;
+    font-size: 14.5px;
+    line-height: 1.55;
+    letter-spacing: 0.01em;
+}
+
+.theme-light .scientific-translator-popup .st-phonetic {
+    color: #e65100;
 }
 
 .scientific-translator-popup .st-terms {
@@ -112,27 +148,38 @@
 }
 
 .scientific-translator-popup .st-terms li {
-    padding: 8px 10px;
+    padding: 9px 11px;
     margin-bottom: 6px;
-    background: var(--background-secondary);
-    border-radius: 4px;
-    border-left: 3px solid var(--interactive-accent);
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    border-left: 3px solid #4fc3f7;
+    backdrop-filter: blur(8px);
+}
+
+.theme-light .scientific-translator-popup .st-terms li {
+    background: rgba(0, 0, 0, 0.03);
+    border-left-color: #1976d2;
 }
 
 .scientific-translator-popup .st-term-zh {
     font-weight: 600;
     margin-right: 6px;
+    color: #4fc3f7;
+}
+
+.theme-light .scientific-translator-popup .st-term-zh {
+    color: #1976d2;
 }
 
 .scientific-translator-popup .st-term-en {
     color: var(--text-muted);
     font-style: italic;
-    font-size: 13px;
+    font-size: 12.5px;
 }
 
 .scientific-translator-popup .st-term-note {
     margin-top: 4px;
-    font-size: 13px;
+    font-size: 12.5px;
     color: var(--text-muted);
     line-height: 1.5;
 }
@@ -140,44 +187,66 @@
 .scientific-translator-popup .st-loading {
     text-align: center;
     color: var(--text-muted);
-    padding: 20px;
-    font-size: 14px;
+    padding: 24px;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+}
+
+.scientific-translator-popup .st-loading::before {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(79, 195, 247, 0.3);
+    border-top-color: #4fc3f7;
+    border-radius: 50%;
+    animation: st-spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes st-spin {
+    to { transform: rotate(360deg); }
 }
 
 .scientific-translator-popup .st-error {
-    padding: 12px;
-    background: var(--background-modifier-error);
-    color: var(--text-error);
-    border-radius: 4px;
-    line-height: 1.5;
+    padding: 11px 13px;
+    background: rgba(255, 100, 100, 0.12);
+    color: #ff8a80;
+    border-radius: 10px;
+    border-left: 3px solid #ff5252;
+    line-height: 1.55;
     white-space: pre-wrap;
     word-break: break-word;
+    font-size: 12.5px;
 }
 
 .scientific-translator-popup .st-footer {
     display: flex;
-    gap: 8px;
+    gap: 7px;
     padding: 10px 14px;
-    background: var(--background-secondary);
-    border-top: 1px solid var(--background-modifier-border);
+    background: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .scientific-translator-popup .st-btn {
-    background: var(--interactive-normal);
+    background: rgba(255, 255, 255, 0.06);
     color: var(--text-normal);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    padding: 6px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 5px 11px;
     cursor: pointer;
-    font-size: 13px;
-    transition: background 0.1s;
+    font-size: 12.5px;
+    transition: all 0.15s;
+    backdrop-filter: blur(8px);
 }
 
 .scientific-translator-popup .st-btn:hover {
-    background: var(--interactive-hover);
+    background: rgba(79, 195, 247, 0.2);
+    border-color: rgba(79, 195, 247, 0.4);
+    transform: translateY(-1px);
 }
 
 .scientific-translator-popup .st-btn:active {
-    background: var(--interactive-accent);
-    color: var(--text-on-accent);
+    transform: translateY(0);
 }

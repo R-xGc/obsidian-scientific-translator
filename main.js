@@ -86,10 +86,16 @@ class ScientificTranslator extends Plugin {
             })
         );
 
+        // 缓存 PDF 选区（用于 pdf-menu 触发时使用）
+        this.pdfSelectionCache = '';
+
         // 注册右键菜单（PDF 阅读视图，Obsidian 1.5+）
         this.registerEvent(
             this.app.workspace.on('pdf-menu', (menu, pdfView) => {
-                const selection = this.getPdfSelection(pdfView);
+                let selection = this.pdfSelectionCache;
+                if (!selection || !selection.trim()) {
+                    selection = this.getPdfSelection(pdfView);
+                }
                 if (selection && selection.trim().length > 0) {
                     menu.addItem((item) =>
                         item
@@ -100,6 +106,32 @@ class ScientificTranslator extends Plugin {
                             })
                     );
                 }
+            })
+        );
+
+        // 监听 PDF 视图激活，挂载 mouseup 缓存选中文字
+        this.registerEvent(
+            this.app.workspace.on('active-leaf-change', (leaf) => {
+                if (!leaf) return;
+                const view = leaf.view;
+                if (!view) return;
+                // 检测 PDF 视图
+                if (view.getViewType && view.getViewType() === 'pdf') {
+                    setTimeout(() => this.attachPdfListeners(view), 500);
+                }
+            })
+        );
+
+        // 监听 PDF 打开事件
+        this.registerEvent(
+            this.app.workspace.on('file-open', (file) => {
+                if (!file) return;
+                setTimeout(() => {
+                    const leaves = this.app.workspace.getLeavesOfType('pdf');
+                    leaves.forEach((leaf) => {
+                        if (leaf.view) this.attachPdfListeners(leaf.view);
+                    });
+                }, 300);
             })
         );
 
@@ -202,28 +234,85 @@ class ScientificTranslator extends Plugin {
     getPdfSelection(pdfView) {
         try {
             // 方法 1：PDF.js viewer API
-            if (pdfView && pdfView.pdfViewer && typeof pdfView.pdfViewer.getSelection === 'function') {
-                const sel = pdfView.pdfViewer.getSelection();
-                if (sel && sel.toString().trim().length > 0) return sel.toString();
+            if (pdfView && pdfView.pdfViewer) {
+                // 尝试多个 PDF.js viewer 方法名
+                const viewer = pdfView.pdfViewer;
+                if (typeof viewer.getSelection === 'function') {
+                    const sel = viewer.getSelection();
+                    if (sel && sel.toString().trim().length > 0) return sel.toString();
+                }
+                if (typeof viewer.getSelectedText === 'function') {
+                    const sel = viewer.getSelectedText();
+                    if (sel && sel.trim().length > 0) return sel;
+                }
+                // 通过事件总线取
+                try {
+                    const eventBus = viewer.eventBus;
+                    if (eventBus) {
+                        // 标记，但我们无法直接同步取，先尝试其他方法
+                    }
+                } catch {}
             }
-            // 方法 2：iframe contentWindow
-            if (pdfView && pdfView.iframe && pdfView.iframe.contentWindow) {
-                const sel = pdfView.iframe.contentWindow.getSelection();
-                if (sel && sel.toString().trim().length > 0) return sel.toString();
+            // 方法 2：从 pdfView 内部 iframe 取 selection
+            if (pdfView) {
+                let iframe = null;
+                if (pdfView.iframe) {
+                    iframe = pdfView.iframe;
+                } else if (pdfView.contentEl) {
+                    iframe = pdfView.contentEl.querySelector('iframe');
+                } else if (pdfView.containerEl) {
+                    iframe = pdfView.containerEl.querySelector('iframe');
+                }
+                if (iframe && iframe.contentWindow) {
+                    try {
+                        const sel = iframe.contentWindow.getSelection();
+                        if (sel && sel.toString && sel.toString().trim().length > 0) {
+                            return sel.toString();
+                        }
+                    } catch (crossOriginErr) {
+                        // iframe 跨域或 sandbox 限制
+                    }
+                }
             }
-            // 方法 3：window.getSelection（canvas-based 选择不一定生效）
+            // 方法 3：active document 全局选择
             const sel = window.getSelection();
             if (sel && sel.toString().trim().length > 0) return sel.toString();
-            // 方法 4：active document
-            if (document.activeElement && document.activeElement.tagName === 'EMBED') {
-                // PDF embedded as <embed>, try parent's selection
-                const docSel = document.getSelection();
-                if (docSel && docSel.toString().trim().length > 0) return docSel.toString();
+            // 方法 4：document.getSelection（embed PDF）
+            const docSel = document.getSelection();
+            if (docSel && docSel.toString && docSel.toString().trim().length > 0) {
+                return docSel.toString();
             }
         } catch (e) {
-            // silently fail
+            // 静默失败
         }
         return '';
+    }
+
+    // 给 PDF 视图挂载 mouseup 监听，缓存选区文字
+    attachPdfListeners(pdfView) {
+        if (!pdfView || pdfView._stAttached) return;
+        try {
+            const container = pdfView.contentEl || pdfView.containerEl;
+            if (!container) return;
+
+            const onMouseUp = () => {
+                const sel = this.getPdfSelection(pdfView);
+                if (sel && sel.trim()) {
+                    this.pdfSelectionCache = sel;
+                }
+            };
+
+            container.addEventListener('mouseup', onMouseUp);
+            container.addEventListener('keyup', onMouseUp);
+
+            pdfView._stAttached = true;
+            pdfView._stCleanup = () => {
+                container.removeEventListener('mouseup', onMouseUp);
+                container.removeEventListener('keyup', onMouseUp);
+            };
+        } catch (e) {
+            // 静默
+        }
     }
 
     async callAPI(text) {
@@ -347,6 +436,17 @@ class TranslatorPopup {
             if (e.key === 'Escape') this.close();
         };
         document.addEventListener('keydown', this.escHandler);
+
+        // 点击弹窗外部关闭
+        this.outsideClickHandler = (e) => {
+            if (this.popupEl && !this.popupEl.contains(e.target)) {
+                this.close();
+            }
+        };
+        // 用 setTimeout 延迟挂载，避免当前触发右键的点击立刻关闭弹窗
+        setTimeout(() => {
+            document.addEventListener('mousedown', this.outsideClickHandler);
+        }, 100);
     }
 
     setResult(result) {
@@ -438,6 +538,9 @@ class TranslatorPopup {
         }
         if (this.escHandler) {
             document.removeEventListener('keydown', this.escHandler);
+        }
+        if (this.outsideClickHandler) {
+            document.removeEventListener('mousedown', this.outsideClickHandler);
         }
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
