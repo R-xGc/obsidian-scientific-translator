@@ -1,0 +1,8 @@
+{
+  "1.0.0": {
+    "minAppVersion": "1.4.0",
+    "obsidian": {
+      "isDesktopOnly": true
+    }
+  }
+}
