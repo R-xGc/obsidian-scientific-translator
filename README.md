@@ -194,4 +194,4 @@ MIT © 2026 Eitan
 ## 🙏 致谢
 
 - Inspired by [Easy Translator](https://github.com/fargofil/obsidian-easy-translator) and [Chinese Translate](https://github.com/qawatake/obsidian-chinese-translate)
-- 用户可配置任意 OpenAI 兼容 API（如 MiniMax-M3、OpenAI、DeepSeek 等）
+- 用户可配置任意 OpenAI 兼容 API（如 DeepSeek、OpenAI、MiniMax 等）
